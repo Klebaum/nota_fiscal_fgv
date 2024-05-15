@@ -11,28 +11,6 @@ df = pd.DataFrame()
 
 uploaded_file = st.file_uploader("Escolha um ou mais arquivos", type=['pdf', 'zip'], accept_multiple_files=True, key='file_uploader', help='Upload de arquivos PDF ou ZIP contendo PDFs.')
 
-# css = '''
-# <style>
-#     [data-testid='stFileUploader'] {
-#         width: max-content;
-#     }
-#     [data-testid='stFileUploader'] section {
-#         padding: 0;
-#         float: left;
-#     }
-#     [data-testid='stFileUploader'] section > input + div {
-#         display: none;
-#     }
-#     [data-testid='stFileUploader'] section + div {
-#         float: right;
-#         padding-top: 0;
-#     }
-
-# </style>
-# '''
-
-# st.markdown(css, unsafe_allow_html=True)
-
 if uploaded_file is not None:
     try:
         for i in range(len(uploaded_file)):
@@ -44,13 +22,26 @@ if uploaded_file is not None:
             json_data = json.loads(data)
             # st.write(json_data)
 
+            if "CNAE" in json_data and len(json_data["CNAE"]) > 0:
+                if "value" not in json_data["CNAE"][0]:
+                    json_data["CNAE"][0]["value"] = "Não encontrado"
+
+            if "NOTA" in json_data and len(json_data["NOTA"]) > 0:
+                if "value" not in json_data["NOTA"][0]:
+                    json_data["NOTA"][0]["value"] = "Não encontrado"
+            
+            if "VALOR" in json_data and len(json_data["VALOR"]) > 0:
+                if "value" not in json_data["VALOR"][0]:
+                    json_data["VALOR"][0]["value"] = "Não encontrado"
+
             df_aux = pd.DataFrame({
-                'CNAE_score': [json_data['CNAE'][0]['score']],
-                'NOTA_score': [json_data['NOTA'][0]['score']],
-                'NOTA_value': [json_data['NOTA'][0]['value']],
-                'VALOR_score': [json_data['VALOR'][0]['score']],
-                'VALOR_value': [json_data['VALOR'][0]['value']],
-                'ocrScore': [json_data['__documentMetadata']['ocrScore']],
+                #'CNAE_score': [json_data['CNAE'][0]['score']],
+                'CNAE': [json_data['CNAE'][0]['value']],
+                #'NOTA_score': [json_data['NOTA'][0]['score']],
+                'NOTA': [json_data['NOTA'][0]['value']],
+                #'VALOR_score': [json_data['VALOR'][0]['score']],
+                'VALOR': [json_data['VALOR'][0]['value']],
+                #'ocrScore': [json_data['__documentMetadata']['ocrScore']],
                 'Status': 'pendente'
             })
 
