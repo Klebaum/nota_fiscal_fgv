@@ -4,65 +4,40 @@ import pandas as pd
 from snowflake.snowpark import FileOperation
 from connection_snowflake.connection import getSession, runQuery
 import json
+from datetime import datetime
+from login.login import login
+import time
+from st_pages import Page, add_page_title, show_pages
+from streamlit_option_menu import option_menu
+from upload_nf import main as upload_nf
+from relatorio import main as relatorio
 
 session = getSession()
 
-df = pd.DataFrame()
 
-uploaded_file = st.file_uploader("Escolha um ou mais arquivos", type=['pdf', 'zip'], accept_multiple_files=True, key='file_uploader', help='Upload de arquivos PDF ou ZIP contendo PDFs.')
+col1, col2, col3, col4, col5 = st.columns(5)
 
-if uploaded_file is not None:
-    try:
-        for i in range(len(uploaded_file)):
-            FileOperation(session).put_stream(input_stream=uploaded_file[i], stage_location='@'+'doc_ai_stage'+'/'+uploaded_file[i].name, auto_compress=False)
-            query = f"SELECT DOC_AI_DB.FGV.NF_FGV!PREDICT(GET_PRESIGNED_URL(@doc_ai_stage, '{uploaded_file[i].name}'), 1);"
-            data = runQuery(query, session)
-            data = data[0][0]
+if 'connection_established' not in st.session_state or not st.session_state.connection_established:
+    with col3:
+        login(session)
 
-            json_data = json.loads(data)
-            # st.write(json_data)
+elif 'connection_established' in st.session_state:
+    with st.sidebar:
+        selected = option_menu("", ["Carga Nota", "Relatório"],
+                               icons=['📈', '📈'], menu_icon="'📈'", default_index=0,
+                            #    styles={
+                            #     "nav-link-selected": {"background-color": "#105aff"},
+                            #     }
+        )
+    
+    if selected == "Carga Nota":
+        upload_nf(session)
 
-            if "CNAE" in json_data and len(json_data["CNAE"]) > 0:
-                if "value" not in json_data["CNAE"][0]:
-                    json_data["CNAE"][0]["value"] = "Não encontrado"
+    if selected == "Relatório":
+        relatorio()
 
-            if "NOTA" in json_data and len(json_data["NOTA"]) > 0:
-                if "value" not in json_data["NOTA"][0]:
-                    json_data["NOTA"][0]["value"] = "Não encontrado"
-            
-            if "VALOR" in json_data and len(json_data["VALOR"]) > 0:
-                if "value" not in json_data["VALOR"][0]:
-                    json_data["VALOR"][0]["value"] = "Não encontrado"
-
-            df_aux = pd.DataFrame({
-                #'CNAE_score': [json_data['CNAE'][0]['score']],
-                'CNAE': [json_data['CNAE'][0]['value']],
-                #'NOTA_score': [json_data['NOTA'][0]['score']],
-                'NOTA': [json_data['NOTA'][0]['value']],
-                #'VALOR_score': [json_data['VALOR'][0]['score']],
-                'VALOR': [json_data['VALOR'][0]['value']],
-                #'ocrScore': [json_data['__documentMetadata']['ocrScore']],
-                'Status': 'pendente'
-            })
-
-            df = pd.concat([df, df_aux], ignore_index=True)
-    except Exception as e:
-        st.write(e)
-
-with st.container():
-    st.subheader('Notas Carregadas')
-    if df.empty:
-        st.write('Nenhuma nota carregada')
-        df_empty = pd.DataFrame({
-            'NOTA': [''] * 5,
-            'CNAE': [''] * 5,
-            'VALOR': [''] * 5,
-            'STATUS': [''] * 5
-        })
-        st.dataframe(df_empty, width=1000, height=200)
-    else:
-        edited_df = st.data_editor(df, hide_index=True, disabled='Status')
-    if st.button("Enviar Notas"):
-        st.write("Notas enviadas com sucesso!")
-
-
+    if st.button('Sair'):
+        time.sleep(1)
+        st.session_state.clear()
+        st.cache_data.clear()
+        st.rerun()
