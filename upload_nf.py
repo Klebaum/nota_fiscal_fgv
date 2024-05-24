@@ -36,12 +36,16 @@ def load_data(_session, uploaded_file, df):
             df_aux = pd.DataFrame({
                 'ID': st.session_state.user_id,
                 'NOTA': [json_data['NOTA'][0]['value']],
-                'CNPJ_TOMADOR': [json_data['CNPJ_TOMADOR'][0]['value']],
+                'CNPJ TOMADOR': [json_data['CNPJ_TOMADOR'][0]['value']],
                 'CNAE': [json_data['CNAE'][0]['value']],
-                'Data Upload' : date.today(),
+                'DATA DE UPLOAD' : date.today(),
+                'DATA DE EMISSÃO': date.today(),
                 'VALOR': [float(json_data['VALOR'][0]['value'].replace('R$', '').replace('.', '').replace(',', '.'))],
-                'Ordem de Compra': '',
-                'Status': 'Pendente'
+                'ORDEM DE COMPRA': 6464545,
+                'DISCIPLINA': 'abc, cdf',
+                'TURMA': 'abc',    
+                'DATA DE PAGAMENTO': date.today(),
+                'STATUS': 'NF pendente'
             })
             df = pd.concat([df, df_aux], ignore_index=True)
         return df
@@ -55,28 +59,46 @@ def main(session):
         df = load_data(session, uploaded_file, df)
 
     with st.container():
-        st.subheader('Notas Carregadas')
+        st.subheader('Dados das Notas Fiscais')
         if df.empty:
             st.error('Nenhuma nota carregada')
             df_empty = pd.DataFrame({
-                'NOTA': [''] * 5,
-                'CNPJ': [''] * 5,
-                'CNAE': [''] * 5,
-                'VALOR': [''] * 5,
-                'ORDEM DE COMPRA': [''] * 5,
-                'STATUS': [''] * 5
+                'ORDEM DE COMPRA': [' '] * 5,
+                'NOTA': [' '] * 5,
+                'DATA EMISSÃO': [' '] * 5,
+                'CNPJ TOMADOR': [' '] * 5,
+                'CNAE': [' '] * 5,
+                'VALO': [' '] * 5,
+                'DISCIPLINA': [' '] * 5,
+                'STATUS': [' '] * 5,
+                'TURMA': [' '] * 5,
+                'DATA DE UPLOAD': [' '] * 5,
+                'DATA DE PAGAMENTO': [' '] * 5
             })
             st.dataframe(df_empty, width=1000, hide_index=True, use_container_width=True)
 
         else:
-            edited_df = st.data_editor(df, key="key", hide_index=True, disabled='Status', width=1000, column_order=('NOTA', 'CNPJ_TOMADOR', 'CNAE', 'Data Upload', 'VALOR', 'Ordem de Compra', 'Status'), use_container_width=True)
+            edited_df = st.data_editor(df, key="key", hide_index=True, disabled='STATUS', width=1000, column_order=('ORDEM DE COMPRA', 'NOTA', 'DATA DE EMISSÃO', 'CNPJ TOMADOR', 'VALOR', 'DISCIPLINA', 'DATA DE PAGAMENTO'), use_container_width=True)
             df_to_snowflake = pd.DataFrame(edited_df)        
 
         try:
             if st.button("Enviar Notas"):
                 for i in range(len(df_to_snowflake)):
-                    query = f"INSERT INTO DOC_AI_DB.FGV.NF_FGV VALUES ({df_to_snowflake['ID'][i]}, {df_to_snowflake['NOTA'][i]}, '{df_to_snowflake['CNPJ_TOMADOR'][i]}', '{df_to_snowflake['CNAE'][i]}', '{df_to_snowflake['Data Upload'][i]}', {df_to_snowflake['VALOR'][i]}, '{df_to_snowflake['Ordem de Compra'][i]}', '{df_to_snowflake['Status'][i]}');"
+                    query = f"""INSERT INTO DOC_AI_DB.FGV.NF_FGV VALUES (
+                        {df_to_snowflake['ID'][i]},
+                        {df_to_snowflake['ORDEM DE COMPRA'][i]}, 
+                        {df_to_snowflake['NOTA'][i]}, 
+                        '{df_to_snowflake['DATA DE EMISSÃO'][i]}', 
+                        '{df_to_snowflake['CNPJ TOMADOR'][i]}', 
+                        '{df_to_snowflake['CNAE'][i]}',
+                        {df_to_snowflake['VALOR'][i]},
+                        '{df_to_snowflake['DISCIPLINA'][i]}', 
+                        '{df_to_snowflake['STATUS'][i]}',
+                        '{df_to_snowflake['TURMA'][i]}',
+                        '{df_to_snowflake['DATA DE UPLOAD'][i]}'), 
+                        '{df_to_snowflake['DATA DE PAGAMENTO'][i]}');"""
                     runQuery(query, session)
                 st.success("Notas enviadas com sucesso!")
-        except Exception:
+        except Exception as e:
             st.error('Erro ao enviar notas, campos obrigatórios não preenchidos.')
+            st.error(e)
