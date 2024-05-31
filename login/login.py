@@ -2,7 +2,7 @@ import streamlit as st
 from connection_snowflake.connection import runQuery
 import pandas as pd
 import time
-
+ 
 def login(session):
     with st.form(key='login'):
         st.title('Login')

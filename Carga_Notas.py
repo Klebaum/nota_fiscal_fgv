@@ -16,27 +16,51 @@ if 'connection_established' not in st.session_state or not st.session_state.conn
         login(session)
 
 elif 'connection_established' in st.session_state:
-    with st.sidebar:
-        # logo fgv
-        selected = option_menu("Menu", ["Carga Nota", "Relatório"],
-                               icons=['📈', '📈'], menu_icon="'📈'", default_index=0,
-                            #    styles={
-                            #     "nav-link-selected": {"background-color": "#105aff"},
-                            #     }
-        )
+    if st.session_state.user_id != 201:
+        with st.sidebar:
+            # logo fgv
+            selected = option_menu("Menu", ["Carga Nota", "Relatório"],
+                                icons=['📈', '📈'], menu_icon="'📈'", default_index=0,
+                                #    styles={
+                                #     "nav-link-selected": {"background-color": "#105aff"},
+                                #     }
+            )
 
-        col1, col2, col3 = st.columns(3)
+            col1, col2, col3 = st.columns(3)
 
-        if col2.button('Sair'):
-            time.sleep(1)
-            st.session_state.clear()
-            st.cache_data.clear()
-            st.rerun()
+            if col2.button('Sair'):
+                time.sleep(1)
+                st.session_state.clear()
+                st.cache_data.clear()
+                st.rerun()
+        
+        if selected == "Carga Nota":
+            upload_nf(session)
+
+        elif selected == "Relatório":
+            relatorio(session)
     
-    if selected == "Carga Nota":
-        upload_nf(session)
+    else:
+        with st.sidebar:
+            # logo fgv
+            selected = option_menu("Menu", ["Relatório"],
+                                icons=['📈', '📈'], menu_icon="'📈'", default_index=0,
+                                #    styles={
+                                #     "nav-link-selected": {"background-color": "#105aff"},
+                                #     }
+            )
 
-    elif selected == "Relatório":
-        relatorio(session)
+            col1, col2, col3 = st.columns(3)
 
-    
+            if col2.button('Sair'):
+                time.sleep(1)
+                st.session_state.clear()
+                st.cache_data.clear()
+                st.rerun()
+        
+        if selected == "Carga Nota":
+            upload_nf(session)
+
+        elif selected == "Relatório":
+            relatorio(session)
+        
